@@ -4,6 +4,7 @@ import { ethers, Signer, Contract, BrowserProvider } from "ethers";
 import { useState } from "react";
 import abi from "./abi.json";
 import Task from "./Task";
+import { MetaMaskInpageProvider } from "@metamask/providers";
 
 type Task = {
   id: number;
@@ -12,6 +13,13 @@ type Task = {
   createdAt: number;
   createdBy: string;
 };
+
+
+declare global {
+  interface Window{
+    ethereum?:MetaMaskInpageProvider
+  }
+}
 
 export default function TodoList() {
   const [wallet, setWallet] = useState<Signer | undefined>(undefined);
@@ -27,10 +35,13 @@ export default function TodoList() {
 
   const connectWithProvider = async () => {
     try {
-      await (window as any).ethereum.request({
+      if (!window?.ethereum) {
+        throw new Error("Please install MetaMask to use this app");
+      }
+      await window.ethereum.request({
         method: "eth_requestAccounts",
       });
-      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, abi, signer);
       const address = await signer.getAddress();
